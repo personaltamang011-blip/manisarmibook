@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Mani Book Reader - Green Theme</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: "Segoe UI", sans-serif; background: #fafafa; color: #222; line-height: 1.6; transition: background 0.3s, color 0.3s; }
+
+  header {
+    background: white;
+    border-bottom: 1px solid #ddd;
+    padding: 1rem;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .header-left, .header-right { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+  .header-left .title { font-weight: bold; font-size: 1.2rem; }
+  .header-left button { padding: 0.4rem 0.7rem; font-size: 0.9rem; }
+
+  select {
+    padding: 0.4rem;
+    font-size: 1rem;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    outline: none;
+    cursor: pointer;
+    transition: background 0.3s, color 0.3s, border 0.3s;
+  }
+
+  button {
+    background: #2ecc71; /* Main green */
+    color: white;
+    border: none;
+    padding: 0.5rem 0.9rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: 0.2s;
+  }
+
+  button:hover { background: #27ae60; }
+
+  .reader-container {
+    padding: 2.5rem 3rem;
+    max-width: 800px;
+    margin: 1rem auto;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.05);
+    transition: background 0.3s, color 0.3s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Audio player */
+  .audio-player {
+    text-align: center;
+    margin-bottom: 1rem;
+  }
+  audio {
+    width: 80%;
+    border-radius: 10px;
+  }
+
+  .chapter-title {
+    color: #27ae60;
+    font-weight: 600;
+    font-size: 1.3rem;
+    margin-bottom: 1rem;
+    text-align: center;
+  }
+
+  .verse-number { font-weight: bold; color: #555; }
+  .verse p { padding: 0.3rem; border-radius: 5px; }
+  .verse p.highlight { background: #d8f6e4; }
+
+  /* Floating Prev/Next buttons (green) */
+  .reader-nav button {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 1.2rem;
+    border-radius: 50%;
+    width: 45px;
+    height: 45px;
+    text-align: center;
+    line-height: 45px;
+    background: #2ecc71;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    opacity: 0.5;
+    transition: opacity 0.3s ease, background 0.3s ease;
+  }
+
+  .reader-nav button:hover {
+    opacity: 1;
+    background: #27ae60;
+  }
+
+  .reader-nav button:first-child { left: 5px; }
+  .reader-nav button:last-child { right: 5px; }
+
+  .verse {
+    padding-left: 50px;
+    padding-right: 50px;
+  }
+
+  @media (max-width: 600px) {
+    header { flex-direction: column; align-items: flex-start; }
+    .header-right { margin-top: 0.5rem; }
+
+    .reader-container { padding: 1.5rem; }
+    .verse { padding-left: 0; padding-right: 0; }
+
+    .reader-nav button {
+      position: fixed;
+      bottom: 20px;
+      top: auto;
+      transform: none;
+      width: 50px;
+      height: 50px;
+      font-size: 1.4rem;
+      border-radius: 50%;
+      opacity: 0.6;
+    }
+    .reader-nav button:first-child { left: 10px; }
+    .reader-nav button:last-child { right: 10px; }
+  }
+
+  /* 🌙 Dark Mode (green theme) */
+  body.dark-mode {
+    background: #121212;
+    color: #eee;
+  }
+  body.dark-mode header {
+    background: #1e1e1e;
+    border-bottom: 1px solid #333;
+  }
+  body.dark-mode .reader-container {
+    background: #1e1e1e;
+    box-shadow: 0 0 10px rgba(255,255,255,0.05);
+  }
+  body.dark-mode select {
+    background: #333;
+    color: #eee;
+    border: 1px solid #555;
+  }
+
+  /* Green accents for dark mode */
+  body.dark-mode .chapter-title {
+    color: #2ecc71;
+  }
+  body.dark-mode .verse p.highlight {
+    background: #1b402b;
+  }
+  body.dark-mode button {
+    background: #27ae60;
+    color: white;
+  }
+  body.dark-mode button:hover {
+    background: #1e8449;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <div class="title">ManiSarmi</div>
+    <button id="darkModeBtn">🌙 Dark Mode</button>
+  </div>
+
+  <div class="header-right">
+    <label>Chapter:</label>
+    <select id="chapterSelect"></select>
+
+    <label>Verse:</label>
+    <select id="verseSelect"></select>
+  </div>
+</header>
+
+<div class="reader-container">
+  <div class="audio-player">
+    <audio id="chapterAudio" controls>
+      <source src="audio.mp3" type="audio/mpeg" />
+      Your browser does not support the audio element.
+    </audio>
+  </div>
+
+  <h2 class="chapter-title" id="chapter-title"></h2>
+  <div id="chapter-content" class="verse"></div>
+
+  <div class="reader-nav">
+    <button onclick="prevVerse()">⬅️</button>
+    <button onclick="nextVerse()">➡️</button>
+  </div>
+</div>
+
+<script>
+const book = [
+  { title: "Genesis", audio: "audio/genesis.mp3", verses: [
+    "In the beginning, God created the heavens and the earth.",
+    "Now the earth was formless and empty, darkness was over the surface of the deep...",
+    "And God said, 'Let there be light,' and there was light.",
+    "God saw that the light was good, and separated light from darkness.",
+    "God called the light 'day,' and the darkness 'night.' And there was evening and morning—the first day."
+  ]},
+  { title: "प्रस्थान", audio: "audio/exodus.mp3", verses: [
+    "याकूबसँग मिश्रमा गएका इस्राएलका छोराहरूको नाम यी नै हुन्‌:",
+    "रूबेन, शिमोन, लेवी र यहूदा;",
+    "इस्साखार, जबूलून र बिन्यामीन;",
+    "दान र नप्ताली; गाद र आशेर।"
+  ]}
+];
+
+let currentChapter = 0;
+let currentVerse = 0;
+
+const chapterSelect = document.getElementById("chapterSelect");
+const verseSelect = document.getElementById("verseSelect");
+const chapterTitleEl = document.getElementById("chapter-title");
+const chapterContentEl = document.getElementById("chapter-content");
+const darkModeBtn = document.getElementById("darkModeBtn");
+const chapterAudio = document.getElementById("chapterAudio");
+
+function populateChapters() {
+  chapterSelect.innerHTML = "";
+  book.forEach((ch, idx) => {
+    const option = document.createElement("option");
+    option.value = idx;
+    option.textContent = ch.title;
+    chapterSelect.appendChild(option);
+  });
+}
+
+function populateVerses() {
+  verseSelect.innerHTML = "";
+  book[currentChapter].verses.forEach((_, idx) => {
+    const option = document.createElement("option");
+    option.value = idx;
+    option.textContent = idx + 1;
+    verseSelect.appendChild(option);
+  });
+}
+
+function showChapter() {
+  const chapter = book[currentChapter];
+  chapterTitleEl.textContent = chapter.title;
+  chapterContentEl.innerHTML = chapter.verses.map((v, i) =>
+    `<p class="${i === currentVerse ? 'highlight' : ''}">
+       <span class="verse-number">${i+1}</span>. ${v}
+     </p>`).join('');
+  chapterSelect.value = currentChapter;
+  verseSelect.value = currentVerse;
+  chapterAudio.src = chapter.audio;
+}
+
+function highlightVerse() {
+  const verseElements = chapterContentEl.querySelectorAll("p");
+  verseElements.forEach((p, i) => p.classList.toggle("highlight", i === currentVerse));
+  verseElements[currentVerse].scrollIntoView({ behavior: "smooth", block: "center" });
+}
+
+function onChapterChange() {
+  currentChapter = parseInt(chapterSelect.value);
+  currentVerse = 0;
+  populateVerses();
+  showChapter();
+  highlightVerse();
+}
+
+function onVerseChange() {
+  currentVerse = parseInt(verseSelect.value);
+  highlightVerse();
+}
+
+function nextVerse() {
+  if (currentVerse < book[currentChapter].verses.length - 1) {
+    currentVerse++;
+  } else if (currentChapter < book.length - 1) {
+    currentChapter++;
+    currentVerse = 0;
+    populateVerses();
+  }
+  showChapter();
+  highlightVerse();
+}
+
+function prevVerse() {
+  if (currentVerse > 0) {
+    currentVerse--;
+  } else if (currentChapter > 0) {
+    currentChapter--;
+    populateVerses();
+    currentVerse = book[currentChapter].verses.length - 1;
+  }
+  showChapter();
+  highlightVerse();
+}
+
+document.addEventListener("keydown", (e) => {
+  if(e.key === "ArrowRight") nextVerse();
+  if(e.key === "ArrowLeft") prevVerse();
+});
+
+darkModeBtn.addEventListener("click", () => {
+  document.body.classList.toggle("dark-mode");
+  darkModeBtn.textContent = document.body.classList.contains("dark-mode")
+    ? "☀️ Light Mode"
+    : "🌙 Dark Mode";
+});
+
+populateChapters();
+populateVerses();
+showChapter();
+highlightVerse();
+
+chapterSelect.addEventListener("change", onChapterChange);
+verseSelect.addEventListener("change", onVerseChange);
+</script>
+
+</body>
+</html>
